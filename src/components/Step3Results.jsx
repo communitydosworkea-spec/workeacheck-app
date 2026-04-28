@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AREA_MAP } from "../lib/areas.js";
-import { buildScoreJustification } from "../lib/scoring.js";
 
 /** Score gauge visual */
 function ScoreGauge({ score, color }) {
@@ -24,13 +23,47 @@ function ScoreGauge({ score, color }) {
   );
 }
 
-/** Individual area result block */
+/** Confetti particle */
+function spawnConfetti(container) {
+  const colors = ["#1D9E75", "#185FA5", "#534AB7", "#BA7517", "#993C1D", "#3B6D11", "#7B2D61", "#FFD700", "#FF6B6B"];
+  const shapes = ["circle", "rect", "triangle"];
+  const count = 120;
+
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement("div");
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    const size = Math.random() * 10 + 6;
+    const startX = Math.random() * window.innerWidth;
+    const duration = Math.random() * 2500 + 2000;
+    const delay = Math.random() * 800;
+
+    el.style.cssText = `
+      position: fixed;
+      top: -20px;
+      left: ${startX}px;
+      width: ${size}px;
+      height: ${size}px;
+      background: ${shape !== "triangle" ? color : "transparent"};
+      border-radius: ${shape === "circle" ? "50%" : shape === "rect" ? "2px" : "0"};
+      border-left: ${shape === "triangle" ? `${size / 2}px solid transparent` : "none"};
+      border-right: ${shape === "triangle" ? `${size / 2}px solid transparent` : "none"};
+      border-bottom: ${shape === "triangle" ? `${size}px solid ${color}` : "none"};
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 1;
+      animation: confettiFall ${duration}ms ${delay}ms ease-in forwards;
+    `;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), duration + delay + 100);
+  }
+}
+
+/** Individual area result block — no CTA, no score justification section */
 function AreaResult({ areaId, areaScore, intel }) {
   const area = AREA_MAP[areaId];
-  const { score, breakdown, level } = areaScore;
+  const { score, level } = areaScore;
   const hasIntel = !!intel;
-
-  const justification = buildScoreJustification(breakdown, score);
 
   return (
     <div style={{ marginBottom: "2.5rem" }}>
@@ -61,15 +94,12 @@ function AreaResult({ areaId, areaScore, intel }) {
           </p>
         )}
 
-        {/* Score Justification */}
-        <div className="score-justification">
-          <strong style={{ fontSize: ".72rem", color: "var(--gris)", letterSpacing: ".08em", textTransform: "uppercase" }}>
-            Cómo se calculó este score
-          </strong>
-          <p style={{ marginTop: ".35rem" }}>
-            {hasIntel && intel.scoreJustification ? intel.scoreJustification : justification}
+        {/* AI Score Justification */}
+        {hasIntel && intel.scoreJustification && (
+          <p style={{ fontSize: ".85rem", color: "var(--gris)", lineHeight: 1.7, borderTop: "1px solid var(--gris-cl)", paddingTop: ".75rem", marginTop: ".5rem" }}>
+            {intel.scoreJustification}
           </p>
-        </div>
+        )}
 
         <p style={{ fontSize: ".875rem", color: "var(--gris)", marginTop: ".875rem", lineHeight: 1.75 }}>
           {level.message}
@@ -105,24 +135,6 @@ function AreaResult({ areaId, areaScore, intel }) {
           ))}
         </div>
       )}
-
-      {/* Concierge CTA */}
-      <div className="concierge-cta">
-        <p>¿Listo para pasar al siguiente nivel en {area.service}?</p>
-        <p>
-          Nuestro equipo de Concierge Empresarial puede acompañarte a implementar estas recomendaciones
-          en semanas, no meses.
-        </p>
-        <a
-          href="https://workeacenter.com/concierge"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn btn-primary"
-          style={{ fontSize: ".87rem" }}
-        >
-          Agenda una sesión gratuita →
-        </a>
-      </div>
     </div>
   );
 }
@@ -189,12 +201,107 @@ function GlobalSummary({ globalScore, globalLevel, selectedAreas }) {
   );
 }
 
+/** Single CTA for all areas */
+function ConciergeCTA({ selectedAreas }) {
+  const serviceList = selectedAreas
+    .map((id) => AREA_MAP[id]?.service)
+    .filter(Boolean)
+    .join(", ");
+
+  return (
+    <div className="concierge-cta" style={{ marginBottom: "2rem" }}>
+      <p>¿Listo para pasar al siguiente nivel?</p>
+      <p>
+        Nuestro equipo de Concierge Empresarial puede acompañarte a implementar las recomendaciones
+        de {selectedAreas.length > 1 ? "todas tus áreas" : "tu área"} ({serviceList}) en semanas, no meses.
+      </p>
+      <a
+        href="https://workeacenter.com/concierge"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn btn-primary"
+        style={{ fontSize: ".87rem" }}
+      >
+        Agenda una sesión gratuita →
+      </a>
+    </div>
+  );
+}
+
+/** Google Review CTA with confetti on viewport entry */
+function GoogleCTA() {
+  const ref = useRef(null);
+  const confettiContainerRef = useRef(null);
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    // Inject confetti keyframe animation once
+    if (!document.getElementById("confetti-style")) {
+      const style = document.createElement("style");
+      style.id = "confetti-style";
+      style.textContent = `
+        @keyframes confettiFall {
+          0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+          80%  { opacity: 1; }
+          100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Create a fixed container for confetti particles
+    const container = document.createElement("div");
+    container.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden;";
+    document.body.appendChild(container);
+    confettiContainerRef.current = container;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !firedRef.current) {
+          firedRef.current = true;
+          spawnConfetti(container);
+        }
+      },
+      { threshold: 0.4 }
+    );
+
+    if (ref.current) observer.observe(ref.current);
+
+    return () => {
+      observer.disconnect();
+      container.remove();
+    };
+  }, []);
+
+  return (
+    <div className="google-cta" role="complementary" aria-label="Invitación a dejar reseña" ref={ref}>
+      <span className="google-cta__stars" aria-hidden="true">⭐⭐⭐⭐⭐</span>
+      <h3 className="google-cta__title">¿Te fue útil tu WorkeaCheck™?</h3>
+      <p className="google-cta__desc">
+        Ayúdanos a llegar a más personas como tú. Deja tu reseña en Google y recoge tu regalo
+        en recepción. Solo toma 60 segundos.
+      </p>
+      <div className="google-cta__incentive">🎁 Recoge tu regalo en recepción</div>
+      <br />
+      <a
+        href="https://g.page/r/workeacenter/review"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="google-cta__btn"
+      >
+        <span style={{ width: 22, height: 22, borderRadius: "50%", background: "#4285F4", color: "#fff", fontSize: ".7rem", fontWeight: 900, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>G</span>
+        Dejar mi reseña en Google
+      </a>
+      <p className="google-cta__note">Muestra esta pantalla en recepción para reclamar tu regalo.</p>
+    </div>
+  );
+}
+
 /** Main Results component */
 export default function Step3Results({ results, selectedAreas, profile, onRestart }) {
   const { areaScores, globalScore, globalLevel, intelligence } = results;
   const [isLoading, setIsLoading] = useState(!intelligence || Object.keys(intelligence).length === 0);
 
-  // If intelligence arrived empty (API error fallback), show results anyway
   useEffect(() => {
     if (intelligence && Object.keys(intelligence).length > 0) setIsLoading(false);
     const timer = setTimeout(() => setIsLoading(false), 500);
@@ -220,27 +327,11 @@ export default function Step3Results({ results, selectedAreas, profile, onRestar
           />
         ))}
 
-        {/* Google Review CTA */}
-        <div className="google-cta" role="complementary" aria-label="Invitación a dejar reseña">
-          <span className="google-cta__stars" aria-hidden="true">⭐⭐⭐⭐⭐</span>
-          <h3 className="google-cta__title">¿Te fue útil tu WorkeaCheck™?</h3>
-          <p className="google-cta__desc">
-            Ayúdanos a llegar a más personas como tú. Deja tu reseña en Google y recoge tu regalo
-            en recepción. Solo toma 60 segundos.
-          </p>
-          <div className="google-cta__incentive">🎁 Recoge tu regalo en recepción</div>
-          <br />
-          <a
-            href="https://g.page/r/workeacenter/review"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="google-cta__btn"
-          >
-            <span style={{ width: 22, height: 22, borderRadius: "50%", background: "#4285F4", color: "#fff", fontSize: ".7rem", fontWeight: 900, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>G</span>
-            Dejar mi reseña en Google
-          </a>
-          <p className="google-cta__note">Muestra esta pantalla en recepción para reclamar tu regalo.</p>
-        </div>
+        {/* Single Concierge CTA after all areas */}
+        <ConciergeCTA selectedAreas={selectedAreas} />
+
+        {/* Google Review CTA with confetti */}
+        <GoogleCTA />
 
         {/* Restart */}
         <div style={{ textAlign: "center", marginTop: "2.5rem" }}>

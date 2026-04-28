@@ -62,10 +62,14 @@ body {
 
 /* ── STEP INDICATOR ── */
 .step-ind {
+  position: sticky;
+  top: 53px; /* sits just below the header */
+  z-index: 99;
   display: flex; align-items: center; justify-content: center;
   gap: .5rem; padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--borde);
-  background: var(--blanco);
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(12px);
 }
 .step-item { display: flex; align-items: center; gap: .5rem; }
 .step-dot {
@@ -336,4 +340,5 @@ body {
   .scale-dot-btn { width: 38px; height: 38px; font-size: .82rem; }
   .acc { flex-direction: column-reverse; }
   .btn { width: 100%; }
+  .step-ind { top: 49px; } /* slightly smaller header on mobile */
 }
