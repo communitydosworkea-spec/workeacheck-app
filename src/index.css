@@ -1,3 +1,8 @@
+/* Spinner animation for loading states */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 :root {
   /* === PALETA FINAL - Blanco, Negro y Azul Marca === */
   --text: #000000;        /* Negro puro - texto principal */

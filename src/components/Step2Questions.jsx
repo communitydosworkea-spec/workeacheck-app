@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AREAS, AREA_MAP, SECTORS, TENURE_OPTIONS, TEAM_OPTIONS, MARKET_OPTIONS } from "../lib/areas.js";
 import { QUESTIONS } from "../lib/questions.js";
 import { scoreAll } from "../lib/scoring.js";
-import { generateAllIntelligence, persistSubmission } from "../lib/intelligence.js";
+import { persistSubmission } from "../lib/intelligence.js";
 
 /** Scale question input */
 function ScaleQuestion({ question, value, onChange }) {
@@ -81,10 +81,13 @@ export default function Step2Questions({
   onProfileChange, onAnswerChange, onBack, onResultsReady,
 }) {
   const { answered, total, pct } = useProgress(selectedAreas, answers, profile);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     console.log("[WorkeaCheck] handleSubmit called");
     e?.preventDefault();
+    
+    setIsSubmitting(true);
 
     try {
       // 1. Calculate scores synchronously
@@ -92,26 +95,17 @@ export default function Step2Questions({
       const { areaScores, globalScore, globalLevel } = scoreAll(selectedAreas, answers);
       console.log("[WorkeaCheck] Scores calculated:", { globalScore, globalLevel });
 
-      // 2. Generate AI intelligence (calls Anthropic API)
-      let intelligence = {};
-      try {
-        console.log("[WorkeaCheck] Generating AI intelligence...");
-        intelligence = await generateAllIntelligence(selectedAreas, areaScores, profile);
-        console.log("[WorkeaCheck] AI intelligence generated");
-      } catch (err) {
-        console.error("[WorkeaCheck] AI generation failed, using score-only mode:", err.message);
-        // Graceful degradation: show results without AI narrative
-      }
-
-      // 3. Persist anonymously
+      // 2. Persist submission (always save)
       console.log("[WorkeaCheck] About to persist submission...");
       await persistSubmission({ selectedAreas, profile, answers, areaScores, globalScore, globalLevel });
       console.log("[WorkeaCheck] Submission persisted");
 
-      // 4. Hand results up to App
-      onResultsReady({ areaScores, globalScore, globalLevel, intelligence });
+      // 3. Hand results up to App (no AI intelligence)
+      onResultsReady({ areaScores, globalScore, globalLevel, intelligence: {} });
     } catch (err) {
       console.error("[WorkeaCheck] Error in handleSubmit:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -124,17 +118,6 @@ export default function Step2Questions({
         <p style={{ fontSize: ".9rem", color: "var(--gris)", lineHeight: 1.7, marginBottom: "1.75rem" }}>
           Responde con honestidad — cuanto más preciso seas, más útil será tu resultado.
         </p>
-
-        {/* Progress bar */}
-        <div className="progress-bar-wrap">
-          <div className="progress-label">
-            <span>{answered}/{total} preguntas respondidas</span>
-            <span style={{ fontWeight: 700, color: "var(--verde)" }}>{pct}%</span>
-          </div>
-          <div className="progress-bar-track">
-            <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
-          </div>
-        </div>
 
         <form onSubmit={handleSubmit} noValidate>
 
@@ -232,8 +215,30 @@ export default function Step2Questions({
           </p>
 
           <div className="acc">
-            <button type="button" className="btn btn-ghost" onClick={onBack}>← Cambiar áreas</button>
-            <button type="submit" className="btn btn-primary">Ver mi diagnóstico →</button>
+            <button type="button" className="btn btn-ghost" onClick={onBack} disabled={isSubmitting}>← Cambiar áreas</button>
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              disabled={isSubmitting}
+              style={{ minWidth: "200px" }}
+            >
+              {isSubmitting ? (
+                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span className="spinner" style={{ 
+                    display: "inline-block", 
+                    width: "16px", 
+                    height: "16px", 
+                    border: "2px solid rgba(255,255,255,0.3)", 
+                    borderTopColor: "#fff", 
+                    borderRadius: "50%", 
+                    animation: "spin 1s linear infinite" 
+                  }}></span>
+                  Cargando...
+                </span>
+              ) : (
+                "Ver mi diagnóstico →"
+              )}
+            </button>
           </div>
         </form>
       </div>
