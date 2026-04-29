@@ -284,15 +284,15 @@ function GoogleCTA() {
       <div className="google-cta__incentive">🎁 Recoge tu regalo en recepción</div>
       <br />
       <a
-        href="https://g.page/r/workeacenter/review"
+        href="https://maps.app.goo.gl/Y8VZAKy7udwcGtSq6"
         target="_blank"
         rel="noopener noreferrer"
         className="google-cta__btn"
       >
         <span style={{ width: 22, height: 22, borderRadius: "50%", background: "#4285F4", color: "#fff", fontSize: ".7rem", fontWeight: 900, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>G</span>
-        Dejar mi reseña en Google
+        Abrir Google Maps → toca 'Escribir reseña'
       </a>
-      <p className="google-cta__note">Muestra esta pantalla en recepción para reclamar tu regalo.</p>
+      <p className="google-cta__note">Toca 'Opiniones' → luego 'Escribir una opinión'. Muestra tu reseña publicada en recepción y reclama tu regalo.</p>
     </div>
   );
 }
