@@ -264,16 +264,22 @@ export async function persistSubmission(payload) {
   }
 
   try {
-    // Google Apps Script requires FormData (not JSON) for cross-origin POST
+    // Try JSON first, fallback to FormData if needed
+    await fetch(SHEETS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    console.info("[WorkeaCheck] Submission saved to Google Sheets");
+  } catch (err) {
+    console.warn("[WorkeaCheck] JSON failed, trying FormData:", err.message);
+    // Fallback to FormData
     const form = new FormData();
     form.append("data", JSON.stringify(data));
-
     await fetch(SHEETS_URL, {
       method: "POST",
       body: form,
     });
-    console.info("[WorkeaCheck™] Submission saved to Google Sheets");
-  } catch (err) {
-    console.warn("[WorkeaCheck™] Google Sheets save failed:", err.message);
+    console.info("[WorkeaCheck] Submission saved via FormData");
   }
 }

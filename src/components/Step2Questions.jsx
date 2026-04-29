@@ -83,25 +83,36 @@ export default function Step2Questions({
   const { answered, total, pct } = useProgress(selectedAreas, answers, profile);
 
   const handleSubmit = async (e) => {
+    console.log("[WorkeaCheck] handleSubmit called");
     e?.preventDefault();
 
-    // 1. Calculate scores synchronously
-    const { areaScores, globalScore, globalLevel } = scoreAll(selectedAreas, answers);
-
-    // 2. Generate AI intelligence (calls Anthropic API)
-    let intelligence = {};
     try {
-      intelligence = await generateAllIntelligence(selectedAreas, areaScores, profile);
+      // 1. Calculate scores synchronously
+      console.log("[WorkeaCheck] Calculating scores...");
+      const { areaScores, globalScore, globalLevel } = scoreAll(selectedAreas, answers);
+      console.log("[WorkeaCheck] Scores calculated:", { globalScore, globalLevel });
+
+      // 2. Generate AI intelligence (calls Anthropic API)
+      let intelligence = {};
+      try {
+        console.log("[WorkeaCheck] Generating AI intelligence...");
+        intelligence = await generateAllIntelligence(selectedAreas, areaScores, profile);
+        console.log("[WorkeaCheck] AI intelligence generated");
+      } catch (err) {
+        console.error("[WorkeaCheck] AI generation failed, using score-only mode:", err.message);
+        // Graceful degradation: show results without AI narrative
+      }
+
+      // 3. Persist anonymously
+      console.log("[WorkeaCheck] About to persist submission...");
+      await persistSubmission({ selectedAreas, profile, answers, areaScores, globalScore, globalLevel });
+      console.log("[WorkeaCheck] Submission persisted");
+
+      // 4. Hand results up to App
+      onResultsReady({ areaScores, globalScore, globalLevel, intelligence });
     } catch (err) {
-      console.error("[WorkeaCheck™] AI generation failed, using score-only mode:", err.message);
-      // Graceful degradation: show results without AI narrative
+      console.error("[WorkeaCheck] Error in handleSubmit:", err);
     }
-
-    // 3. Persist anonymously (stub — no-op until Supabase is connected)
-    await persistSubmission({ selectedAreas, profile, answers, areaScores, globalScore });
-
-    // 4. Hand results up to App
-    onResultsReady({ areaScores, globalScore, globalLevel, intelligence });
   };
 
   return (
