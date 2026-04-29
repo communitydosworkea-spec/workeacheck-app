@@ -8,7 +8,7 @@
  *
  * 2. Ve a Extensiones → Apps Script
  *
- * 3. Pega el código de abajo (la función doPost)
+ * 3. Pega el código de abajo (la función doPost y doGet)
  *
  * 4. Despliega → Nueva implementación → Aplicación web:
  *    - Ejecutar como: Ti
@@ -18,6 +18,9 @@
  *    VITE_GOOGLE_SHEETS_URL=https://script.google.com/macros/s/TU_ID/exec
  *
  * 6. Comparte la Sheet con tu equipo de marketing (solo lectura)
+ *
+ * IMPORTANTE: El navegador envía los datos como FormData (campo "data" con JSON).
+ * El script lee e.postData.contents y parsea el JSON interno.
  *
  * ──────────────────────────────────────────────────────────────────────
  *
@@ -31,7 +34,22 @@
 // function doPost(e) {
 //   try {
 //     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-//     var data = JSON.parse(e.postData.contents);
+//
+//     // Leer datos: el navegador envía FormData con campo "data" que contiene JSON
+//     var rawData = e.postData.contents;
+//     var data;
+//     try {
+//       data = JSON.parse(rawData);
+//     } catch(parseErr) {
+//       // FormData llega como multipart, extraer el JSON del campo "data"
+//       // Formato: ------Boundary...\r\n...name="data"\r\n\r\n{JSON}\r\n...------Boundary
+//       var match = rawData.match(/"data"\s*\r\n\r\n([\s\S]*?)\r\n--/);
+//       if (match) {
+//         data = JSON.parse(match[1].trim());
+//       } else {
+//         throw new Error("No se pudo parsear los datos: " + rawData.substring(0, 200));
+//       }
+//     }
 //
 //     // Mapear niveles a etiquetas legibles
 //     var levelLabels = {
@@ -69,7 +87,8 @@
 //       var parts = [];
 //       for (var key in data.areaScores) {
 //         var a = data.areaScores[key];
-//         parts.push((areaLabels[key] || key) + ': ' + a.score + '/100 (' + (levelLabels[a.level?.key] || a.level?.key || '?') + ')');
+//         var levelKey = a.level && a.level.key ? a.level.key : '?';
+//         parts.push((areaLabels[key] || key) + ': ' + a.score + '/100 (' + (levelLabels[levelKey] || levelKey) + ')');
 //       }
 //       areaScoresText = parts.join(' | ');
 //     }
@@ -81,18 +100,18 @@
 //
 //     // Agregar fila con datos legibles
 //     sheet.appendRow([
-//       data.id || '',                                          // ID
-//       new Date().toLocaleString('es-PA', {timeZone: 'America/Panama'}), // Fecha
-//       sectorLabels[data.profile?.sector] || data.profile?.sector || '',  // Sector
-//       tenureLabels[data.profile?.tenure] || data.profile?.tenure || '',  // Antigüedad
-//       teamLabels[data.profile?.team] || data.profile?.team || '',        // Equipo
-//       marketLabels[data.profile?.market] || data.profile?.market || '',  // Mercado
-//       areasText,                                               // Áreas
-//       data.globalScore ?? '',                                  // Score Global
-//       areaScoresText,                                           // Scores por Área
-//       levelLabels[data.globalLevel?.key] || data.globalLevel?.key || '', // Nivel Global
-//       JSON.stringify(data.answers || {}),                       // Respuestas (JSON)
-//       data.qrSource || 'web'                                   // QR Source
+//       data.id || '',
+//       new Date().toLocaleString('es-PA', {timeZone: 'America/Panama'}),
+//       sectorLabels[data.profile ? data.profile.sector : ''] || (data.profile ? data.profile.sector : ''),
+//       tenureLabels[data.profile ? data.profile.tenure : ''] || (data.profile ? data.profile.tenure : ''),
+//       teamLabels[data.profile ? data.profile.team : ''] || (data.profile ? data.profile.team : ''),
+//       marketLabels[data.profile ? data.profile.market : ''] || (data.profile ? data.profile.market : ''),
+//       areasText,
+//       data.globalScore !== undefined ? data.globalScore : '',
+//       areaScoresText,
+//       levelLabels[(data.globalLevel && data.globalLevel.key) ? data.globalLevel.key : ''] || ((data.globalLevel && data.globalLevel.key) ? data.globalLevel.key : ''),
+//       JSON.stringify(data.answers || {}),
+//       data.qrSource || 'web'
 //     ]);
 //
 //     return ContentService.createTextOutput(
@@ -106,7 +125,6 @@
 //   }
 // }
 //
-// // GET para verificar que el webhook está activo
 // function doGet() {
 //   return ContentService.createTextOutput(
 //     JSON.stringify({ status: 'alive', app: 'WorkeaCheck™' })

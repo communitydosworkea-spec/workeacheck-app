@@ -264,11 +264,13 @@ export async function persistSubmission(payload) {
   }
 
   try {
+    // Google Apps Script requires FormData (not JSON) for cross-origin POST
+    const form = new FormData();
+    form.append("data", JSON.stringify(data));
+
     await fetch(SHEETS_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: form,
     });
     console.info("[WorkeaCheck™] Submission saved to Google Sheets");
   } catch (err) {
