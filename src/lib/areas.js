@@ -1,7 +1,7 @@
 /**
  * WorkeaCheck™ — Area & Question Definitions
- * Each area maps to a Concierge service and contains metadata
- * for rendering, scoring, and AI context.
+ * Paleta basada en azul #0A0563 — tonos derivados por luminosidad y saturación.
+ * Cada área mantiene su lógica de color diferenciado, ahora en familia azul-índigo.
  */
 
 export const AREAS = [
@@ -12,9 +12,9 @@ export const AREAS = [
     description: "Control financiero, flujo de caja, contabilidad y decisiones basadas en datos.",
     service: "Contabilidad · Auditorías",
     icon: "$",
-    color: "#1D9E75",
-    bg: "#E1F5EE",
-    textColor: "#0F6E56",
+    color: "#0A0563",      /* azul principal */
+    bg: "#E5E4F5",
+    textColor: "#060340",
     conciergeAction: "agenda una sesión con nuestro equipo de Contabilidad",
   },
   {
@@ -24,9 +24,9 @@ export const AREAS = [
     description: "Identidad visual, presencia digital, propuesta de valor y canales de adquisición.",
     service: "Imagen Corporativa · Marketing",
     icon: "◈",
-    color: "#185FA5",
-    bg: "#E6F1FB",
-    textColor: "#185FA5",
+    color: "#1A3BAA",      /* azul medio */
+    bg: "#E6EDFB",
+    textColor: "#1A3BAA",
     conciergeAction: "agenda una sesión con nuestro equipo de Imagen Corporativa",
   },
   {
@@ -36,9 +36,9 @@ export const AREAS = [
     description: "Madurez de procesos, documentación operativa y capacidad real de escalar.",
     service: "Consultoría · Auditorías",
     icon: "⚙",
-    color: "#534AB7",
-    bg: "#EEEDFE",
-    textColor: "#534AB7",
+    color: "#2D5BE3",      /* azul brillante */
+    bg: "#EAF0FD",
+    textColor: "#1E45B8",
     conciergeAction: "agenda una auditoría de procesos con nuestros consultores",
   },
   {
@@ -48,9 +48,9 @@ export const AREAS = [
     description: "Estructura de equipo, gaps de talento, contratación y retención.",
     service: "Talento Humano · Formación",
     icon: "◎",
-    color: "#BA7517",
-    bg: "#FEF3DC",
-    textColor: "#854F0B",
+    color: "#4B35C8",      /* violeta-azul */
+    bg: "#EDEAFC",
+    textColor: "#3624A0",
     conciergeAction: "agenda una revisión de estructura con nuestro equipo de RRHH",
   },
   {
@@ -60,9 +60,9 @@ export const AREAS = [
     description: "Contratos, estructura societaria, propiedad intelectual y cumplimiento en Panamá.",
     service: "Legal",
     icon: "⚖",
-    color: "#993C1D",
-    bg: "#FAECE7",
-    textColor: "#993C1D",
+    color: "#0B3D7A",      /* azul marino */
+    bg: "#E3EBF8",
+    textColor: "#0B3D7A",
     conciergeAction: "agenda una revisión legal con nuestros asesores en Panamá",
   },
   {
@@ -72,9 +72,9 @@ export const AREAS = [
     description: "Digitalización, automatización, CRM e inteligencia artificial aplicada.",
     service: "Consultoría Tech",
     icon: "◉",
-    color: "#3B6D11",
-    bg: "#EAF3DE",
-    textColor: "#3B6D11",
+    color: "#0D6BB5",      /* azul cielo oscuro */
+    bg: "#E2F0FA",
+    textColor: "#0A5490",
     conciergeAction: "agenda una auditoría tecnológica con nuestros consultores Tech",
   },
   {
@@ -84,9 +84,9 @@ export const AREAS = [
     description: "Visión documentada, escalabilidad del modelo, mentores y acceso a financiamiento.",
     service: "Consultoría Estratégica",
     icon: "△",
-    color: "#7B2D61",
-    bg: "#FBEAF5",
-    textColor: "#7B2D61",
+    color: "#06204D",      /* azul noche */
+    bg: "#E0E6F2",
+    textColor: "#06204D",
     conciergeAction: "agenda una sesión de planificación estratégica con nuestros mentores",
   },
 ];

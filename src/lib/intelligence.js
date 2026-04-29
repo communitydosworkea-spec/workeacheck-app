@@ -226,16 +226,15 @@ export async function generateAllIntelligence(selectedAreas, areaScores, profile
   return Object.fromEntries(results.map((r) => [r.areaId, r]));
 }
 
-// ─── SUPABASE STUB (Future Phase) ─────────────────────────────────────────────
+// ─── GOOGLE SHEETS PERSISTENCE ─────────────────────────────────────────────
+
+const SHEETS_URL = import.meta.env.VITE_GOOGLE_SHEETS_URL ?? "";
 
 /**
- * STUB — Persists an anonymous submission to Supabase.
+ * Persists an anonymous submission to Google Sheets via Apps Script webhook.
  *
- * Call this after `generateAllIntelligence()` resolves.
- * Replace the function body with real Supabase client calls
- * once the backend integration phase begins.
- *
- * See /src/database/schema.sql for the target table structure.
+ * Setup: see /src/database/google-sheets-webhook.js for instructions.
+ * Add VITE_GOOGLE_SHEETS_URL to your .env file.
  *
  * @param {Object} payload
  * @param {string[]}  payload.selectedAreas
@@ -243,30 +242,36 @@ export async function generateAllIntelligence(selectedAreas, areaScores, profile
  * @param {Object}    payload.answers
  * @param {Object}    payload.areaScores
  * @param {number}    payload.globalScore
+ * @param {Object}    payload.globalLevel
  * @param {string}    payload.qrSource      - QR location identifier
  * @returns {Promise<void>}
  */
 export async function persistSubmission(payload) {
-  // TODO (Phase 2): Replace with actual Supabase client
-  // import { createClient } from '@supabase/supabase-js'
-  // const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  //
-  // await supabase.from('submissions').insert({
-  //   areas_selected:   payload.selectedAreas,
-  //   sector:           payload.profile.sector,
-  //   tenure:           payload.profile.tenure,
-  //   team_size:        payload.profile.team,
-  //   market:           payload.profile.market,
-  //   global_score:     payload.globalScore,
-  //   area_scores:      payload.areaScores,    // stored as JSONB
-  //   raw_answers:      payload.answers,       // stored as JSONB
-  //   qr_source:        payload.qrSource ?? 'unknown',
-  //   google_review:    false,
-  // })
-
-  console.info("[WorkeaCheck™] Submission ready for persistence:", {
-    areas: payload.selectedAreas,
-    globalScore: payload.globalScore,
+  const data = {
+    id: crypto.randomUUID?.() ?? Date.now().toString(36),
+    selectedAreas: payload.selectedAreas,
     profile: payload.profile,
-  });
+    answers: payload.answers,
+    areaScores: payload.areaScores,
+    globalScore: payload.globalScore,
+    globalLevel: payload.globalLevel,
+    qrSource: payload.qrSource ?? "web",
+  };
+
+  if (!SHEETS_URL) {
+    console.info("[WorkeaCheck™] Google Sheets URL not configured. Submission data:", data);
+    return;
+  }
+
+  try {
+    await fetch(SHEETS_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    console.info("[WorkeaCheck™] Submission saved to Google Sheets");
+  } catch (err) {
+    console.warn("[WorkeaCheck™] Google Sheets save failed:", err.message);
+  }
 }
