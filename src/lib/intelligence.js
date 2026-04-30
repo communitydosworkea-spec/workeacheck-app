@@ -5,7 +5,56 @@
  * No AI generation - scores-only mode.
  */
 
-const SHEETS_URL = import.meta.env.VITE_GOOGLE_SHEETS_URL || "https://script.google.com/macros/s/AKfycbxNLzcKFGfywIQ79CU1C3gXLsCACFahLizSWktIg3gy05qFpTnwss6nH-OnUXfKdMu2/exec";
+import { QUESTIONS } from "./questions.js";
+
+const SHEETS_URL = import.meta.env.VITE_GOOGLE_SHEETS_URL || "https://script.google.com/macros/s/AKfycbwedBVj3DuO4kQtBlwjsRbs1BeWuiFwOwSDt4X8WBLNLGxAZpsLq68MtkYffPv7wspx/exec";
+
+/**
+ * Format questions and answers as readable text
+ */
+function formatQuestionsAndAnswers(selectedAreas, answers) {
+  const areaLabels = {
+    fin: 'Finanzas',
+    mar: 'Marca',
+    ops: 'Operaciones',
+    tal: 'Talento',
+    leg: 'Legal',
+    tec: 'Tech',
+    est: 'Estrategia'
+  };
+
+  const formatted = [];
+
+  for (const areaId of selectedAreas) {
+    const areaQuestions = QUESTIONS[areaId] || [];
+    const areaParts = [];
+
+    for (const question of areaQuestions) {
+      const answer = answers[question.id];
+      if (answer !== undefined && answer !== null && answer !== '') {
+        // Format the answer based on question type
+        let formattedAnswer;
+        if (question.type === 'scale') {
+          formattedAnswer = answer; // Scale is just a number
+        } else if (question.options) {
+          // Radio/select - find the label for the value
+          const option = question.options.find(opt => opt.value === answer);
+          formattedAnswer = option ? option.label : answer;
+        } else {
+          formattedAnswer = answer;
+        }
+
+        areaParts.push(`${question.code}: ${question.text} (${formattedAnswer})`);
+      }
+    }
+
+    if (areaParts.length > 0) {
+      formatted.push(`${areaLabels[areaId] || areaId}: ${areaParts.join(' | ')}`);
+    }
+  }
+
+  return formatted.join('\n');
+}
 
 /**
  * Persists an anonymous submission to Google Sheets via Apps Script webhook.
@@ -36,6 +85,7 @@ export async function persistSubmission(payload) {
     globalScore: payload.globalScore,
     globalLevel: payload.globalLevel,
     qrSource: payload.qrSource ?? "web",
+    formattedQuestionsAndAnswers: formatQuestionsAndAnswers(payload.selectedAreas, payload.answers),
   };
 
   if (!SHEETS_URL) {

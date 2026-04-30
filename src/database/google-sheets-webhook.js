@@ -3,7 +3,7 @@
  *
  * INSTRUCCIONES DE DESPLIEGUE:
  * - 1. Crea una Google Sheet con estas columnas en la fila 1:
- *    ID | Fecha | Sector | Antigüedad | Equipo | Mercado | Áreas | Score Global | Scores por Área | Nivel Global | Respuestas | QR Source
+ *    ID | Fecha | Sector | Antigüedad | Equipo | Mercado | Áreas | Score Global | Scores por Área | Nivel Global | Preguntas y Respuestas | Respuestas | QR Source
  *
  * - 2. Ve a Extensiones -> Apps Script
  *
@@ -28,13 +28,23 @@
 function doPost(e) {
   try {
     Logger.log("=== POST RECIBIDO ===");
-    Logger.log("Contenido crudo: " + e.postData.contents);
-    Logger.log("Content-Type: " + e.postData.type);
+    Logger.log("Evento completo: " + JSON.stringify(e));
     
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
-    // Parse FormData: buscar el campo "data" con el JSON
-    var rawData = e.postData.contents;
+    // Obtener datos del evento de forma segura
+    var rawData;
+    if (e.postData && e.postData.contents) {
+      rawData = e.postData.contents;
+      Logger.log("Datos de postData.contents: " + rawData);
+    } else if (e.parameter && e.parameter.data) {
+      rawData = e.parameter.data;
+      Logger.log("Datos de parameter.data: " + rawData);
+    } else {
+      Logger.log("ERROR: No se encontraron datos en el evento");
+      throw new Error("No data received in request");
+    }
+    
     var data;
     
     try {
@@ -45,7 +55,7 @@ function doPost(e) {
     } catch(parseErr) {
       Logger.log("JSON directo falló, intentando FormData...");
       // Si falla, extraer del FormData multipart
-      var match = rawData.match(/"data"\s*\r\n\r\n([\s\S]*?)\r\n--/);
+      var match = rawData.match(/name="data"\s*\r\n\r\n([\s\S]*?)\r\n--/);
       if (match) {
         Logger.log("Encontrado patrón FormData, decodificando...");
         data = JSON.parse(decodeURIComponent(match[1].trim()));
@@ -104,6 +114,7 @@ function doPost(e) {
       data.globalScore!==undefined?data.globalScore:'',
       areaScoresText,
       levelLabels[(data.globalLevel&&data.globalLevel.key)?data.globalLevel.key:'']||((data.globalLevel&&data.globalLevel.key)?data.globalLevel.key:''),
+      data.formattedQuestionsAndAnswers||'',
       JSON.stringify(data.answers||{}),
       data.qrSource||'web'
     ];
