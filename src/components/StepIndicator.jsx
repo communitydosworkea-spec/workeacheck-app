@@ -7,6 +7,8 @@ export default function StepIndicator({ current }) {
 
   return (
     <nav className="step-ind" aria-label="Progreso del formulario">
+      <img src="/Logo_for_progress_bar.png" alt="WorkeaCheck" className="progress-logo progress-logo-desktop" />
+      <img src="/logo_favicon.jpg" alt="WorkeaCheck" className="progress-logo progress-logo-mobile" />
       {steps.map((s, i) => (
         <div key={s.n} className="step-item">
           <div
